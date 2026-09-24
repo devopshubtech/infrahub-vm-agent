@@ -1,0 +1,3 @@
+*.exe
+*.exe~
+/vm-agent
