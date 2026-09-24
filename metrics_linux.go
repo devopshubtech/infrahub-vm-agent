@@ -4,7 +4,7 @@
 // filesystem. This binary runs two different ways on Linux, both
 // supported by the same paths below: containerized (`docker run`, see
 // backend/internal/services/vm_agent_install.go's VMAgentRunCommand,
-// which bind-mounts -v /proc:/host/proc:ro -v /:/host/root:ro,rslave),
+// which bind-mounts -v /proc:/host/proc:ro -v /:/host/root:ro),
 // or as a native binary running directly on the host (no Docker at all --
 // see agent-install-command.ts's DOCKER-vs-NATIVE choice for Linux). Only
 // the containerized form needs the /host/ prefix; hostPaths() below picks
