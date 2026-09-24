@@ -73,4 +73,13 @@ type MetricsPushData struct {
 	NetworkRxRateBytes *int64   `json:"network_rx_rate_bytes,omitempty"`
 	NetworkTxRateBytes *int64   `json:"network_tx_rate_bytes,omitempty"`
 	ProcessCount       *int32   `json:"process_count,omitempty"`
+	// Host identity -- collected once per sample via gopsutil's host.Info
+	// (cross-platform, including Linux, so this doesn't need a per-OS
+	// implementation the way the numeric stats above do). Rarely changes,
+	// but resent every push rather than once at connect time so the
+	// backend never needs a separate "hello" message type.
+	Hostname      *string `json:"hostname,omitempty"`
+	OS            *string `json:"os,omitempty"`             // "linux" | "windows" | "darwin"
+	OSVersion     *string `json:"os_version,omitempty"`      // e.g. "Ubuntu 22.04.4 LTS", "Windows 11 Pro 10.0.22631"
+	KernelVersion *string `json:"kernel_version,omitempty"`
 }

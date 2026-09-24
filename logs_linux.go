@@ -1,18 +1,23 @@
-// logs.go reads the VM's OS-level logs: journald primary, a plain-text
-// tail fallback only if the journal can't be opened or is empty. journald
-// is the only guaranteed-present log store on current-generation minimal
-// cloud images (many no longer ship rsyslog by default), so it's the
-// primary source; this agent can't shell out to `journalctl` the way a
-// full OS could (this image is intentionally minimal, no shell/coreutils
-// -- matching this codebase's other agents' distroless discipline as
-// closely as cgo+libsystemd0 allows, see Dockerfile), so it reads the
-// journal directly via sdjournal instead.
+//go:build linux
+
+// logs_linux.go reads the VM's OS-level logs: journald primary, a
+// plain-text tail fallback only if the journal can't be opened or is
+// empty. journald is the only guaranteed-present log store on
+// current-generation minimal cloud images (many no longer ship rsyslog
+// by default), so it's the primary source; this agent can't shell out to
+// `journalctl` the way a full OS could (this image is intentionally
+// minimal, no shell/coreutils -- matching this codebase's other agents'
+// distroless discipline as closely as cgo+libsystemd0 allows, see
+// Dockerfile), so it reads the journal directly via sdjournal instead.
 //
 // The host's journal directories are bind-mounted read-only at fixed
 // container paths by VMAgentRunCommand (backend/internal/services/
 // vm_agent_install.go): /host/var/log/journal (persistent logging, if
 // enabled) and /host/run/log/journal (volatile, tmpfs-backed -- present
 // even when persistent logging isn't). Both are tried, persistent first.
+// Windows/macOS builds have no equivalent (see logs_other.go) -- this
+// agent only ever ships as a Linux Docker image, never natively for those
+// platforms, so cgo/libsystemd0 here is never a cross-compilation problem.
 package main
 
 import (
