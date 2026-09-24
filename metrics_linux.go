@@ -1,14 +1,21 @@
 //go:build linux
 
 // metrics_linux.go reads host metrics from /proc and the host's root
-// filesystem, both bind-mounted read-only into this container at
-// `docker run` time (see backend/internal/services/vm_agent_install.go's
-// VMAgentRunCommand: -v /proc:/host/proc:ro -v /:/host/root:ro,rslave).
-// No --pid=host is needed -- procfs's global counters (stat/meminfo/
-// loadavg/net/dev) are host-real the moment /proc itself is bind-mounted,
-// the same technique node_exporter-style host agents use; only
-// *per-process* /proc/<pid> data would need --pid=host, and this agent
-// collects none of that.
+// filesystem. This binary runs two different ways on Linux, both
+// supported by the same paths below: containerized (`docker run`, see
+// backend/internal/services/vm_agent_install.go's VMAgentRunCommand,
+// which bind-mounts -v /proc:/host/proc:ro -v /:/host/root:ro,rslave),
+// or as a native binary running directly on the host (no Docker at all --
+// see agent-install-command.ts's DOCKER-vs-NATIVE choice for Linux). Only
+// the containerized form needs the /host/ prefix; hostPaths() below picks
+// whichever applies by checking whether that bind mount exists, so no
+// build tag or install-time flag is needed to tell the two apart. No
+// --pid=host is needed either way -- procfs's global counters (stat/
+// meminfo/loadavg/net/dev) are host-real the moment /proc itself is
+// reachable at all (bind-mounted, or just running natively), the same
+// technique node_exporter-style host agents use; only *per-process*
+// /proc/<pid> data would need --pid=host, and this agent collects none of
+// that.
 //
 // CPU% and the two network rates are computed here, as deltas against an
 // in-memory previous sample -- unlike the backend's own SSH-based
@@ -27,10 +34,16 @@ import (
 	"time"
 )
 
-const (
-	hostProc = "/host/proc"
-	hostRoot = "/host/root"
-)
+// hostProc/hostRoot are resolved once at process start -- see this file's
+// own doc comment above for why there are two valid answers.
+var hostProc, hostRoot = hostPaths()
+
+func hostPaths() (proc, root string) {
+	if _, err := os.Stat("/host/proc"); err == nil {
+		return "/host/proc", "/host/root"
+	}
+	return "/proc", "/"
+}
 
 // readCPU parses the aggregate "cpu " line of /proc/stat (8 jiffie
 // counters: user, nice, system, idle, iowait, irq, softirq, steal) and
